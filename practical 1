@@ -1,0 +1,114 @@
+section .data
+    msg1 db "Enter 5 hex numbers (16 digits each):", 10
+    len1 equ $-msg1
+    msg2 db 10, "The entered numbers are:", 10
+    len2 equ $-msg2
+    newline db 10
+
+section .bss
+    array resq 5          
+    buffer resb 20         
+section .text
+    global _start
+
+_start:
+    
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, msg1
+    mov rdx, len1
+    syscall
+
+    
+    mov rcx, 5
+    mov rbx, array
+next_input:
+    push rcx
+    push rbx
+    call accept_hex
+    pop rbx
+    pop rcx
+    add rbx, 8            
+    loop next_input
+
+    
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, msg2
+    mov rdx, len2
+    syscall
+
+    
+    mov rcx, 5
+    mov rbx, array
+next_display:
+    push rcx
+    push rbx
+    mov rdi, [rbx]       
+    call display_hex
+    pop rbx
+    pop rcx
+    add rbx, 8
+    loop next_display
+
+   
+    mov rax, 60
+    xor rdi, rdi
+    syscall
+
+
+accept_hex:
+    mov rax, 0           
+    mov rdi, 0            
+    mov rsi, buffer
+    mov rdx, 18           
+    syscall
+
+    mov rsi, buffer
+    xor rax, rax         
+    mov rcx, 16           
+convert_input:
+    rol rax, 4             
+    mov bl, [rsi]
+    cmp bl, '9'
+    jbe sub_30
+    sub bl, 7             
+sub_30:
+    sub bl, 30h           
+    add al, bl
+    inc rsi
+    loop convert_input
+    mov [rbx], rax        
+    ret
+
+
+display_hex:
+    mov rsi, buffer + 15
+    mov rcx, 16
+cnt_down:
+    mov rdx, rdi
+    and rdx, 0Fh          
+    cmp dl, 9
+    jbe add_30
+    add dl, 7
+add_30:
+    add dl, 30h
+    mov [rsi], dl
+    dec rsi
+    shr rdi, 4            
+    loop cnt_down
+
+    
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, buffer
+    mov rdx, 16
+    syscall
+    
+    
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, newline
+    mov rdx, 1
+    syscall
+    ret
