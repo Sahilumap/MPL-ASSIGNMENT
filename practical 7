@@ -1,0 +1,79 @@
+section .data
+msg1 db "Enter 4-digit Hex Number: "
+len1 equ $-msg1
+
+msg2 db 10,"Equivalent BCD Number: "
+len2 equ $-msg2
+
+section .bss
+num resb 5
+bcd resb 10
+
+%macro scall 4
+mov rax,%1
+mov rdi,%2
+mov rsi,%3
+mov rdx,%4
+syscall
+%endmacro
+
+section .text
+global _start
+
+_start:
+
+scall 1,1,msg1,len1
+scall 0,0,num,5
+
+call ascii_to_hex
+
+mov rax,rbx
+mov rbx,10
+mov rdi,bcd
+xor rcx,rcx
+
+loop_bcd:
+xor rdx,rdx
+div rbx
+push rdx
+inc rcx
+cmp rax,0
+jne loop_bcd
+
+mov r8,rcx
+
+display_bcd:
+pop rdx
+add dl,30h
+mov [rdi],dl
+inc rdi
+dec rcx
+jnz display_bcd
+
+scall 1,1,msg2,len2
+scall 1,1,bcd,r8
+
+mov rax,60
+xor rdi,rdi
+syscall
+
+ascii_to_hex:
+mov rsi,num
+xor rbx,rbx
+mov rcx,4
+
+loop_hex:
+rol rbx,4
+mov al,[rsi]
+
+cmp al,39h
+jbe skip
+sub al,07h
+
+skip:
+sub al,30h
+add bl,al
+
+inc rsi
+loop loop_hex
+ret
