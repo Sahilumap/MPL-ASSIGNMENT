@@ -1,0 +1,90 @@
+
+%macro io 4 
+ mov rax,%1 
+ mov rdi,%2 
+ mov rsi,%3 
+ mov rdx,%4
+ syscall
+%endmacro
+section .data
+ m1 db 10, "Enter X (2 hex digit):"
+ l1 equ $- m1 
+ m2 db 10,"Enter Y (2 hex digit):"
+ l2 equ $- m2 
+ m3 db 10,10, "Result is :"
+ l3 equ $-m3 
+
+section .bss
+ numascii resb 3
+ num1 resb 1 
+ num2 resb 1 
+ result resb 2 
+ dispbuff resb 4 
+section .text
+global _start
+_start:
+
+ io 1,1,m1,l1 
+ io 0,0,numascii,3 
+ call fetchinput 
+ mov [num1],bl
+
+ io 1,1,m2,l2 
+ io 0,0,numascii,3 
+call fetchinput 
+ mov [num2],bl
+
+ call successiveadd 
+ io 1,1,m3,l3 
+ mov bx,[result] 
+ call print 
+
+ mov rax,60 
+ mov rdi,0 
+ syscall
+
+successiveadd:
+ mov cl,[num2] ; counter = num2 (number of times)
+ mov al,[num1] 
+ xor bx,bx 
+add_loop:
+ add bx,ax 
+ dec cl 
+ jnz add_loop 
+ mov [result],bx 
+ ret
+
+fetchinput:
+xor bl,bl 
+ mov ecx,2 
+ mov rsi,numascii 
+next_digit:
+ rol bl,4 
+ mov al,[rsi] 
+ cmp al,'9' 
+ jbe digit
+ sub al,7 
+digit:
+ sub al,'0'
+ add bl,al 
+ inc rsi 
+ loop next_digit 
+ ret
+
+print:
+ mov ecx,4 
+ mov rdi,dispbuff 
+print_loop:
+ rol bx,4 
+ mov al,bl
+ and al,0fh 
+ cmp al,9
+ jbe ok
+ add al,7
+ok:
+ add al,'0' 
+ mov [rdi],al 
+ inc rdi
+ loop print_loop
+ io 1,1,dispbuff,4
+ret
